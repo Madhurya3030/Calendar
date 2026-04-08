@@ -100,28 +100,32 @@ const [yearStart, setYearStart] = useState(new Date().getFullYear() - 6);
     (d) => d.startsWith(currentMonthStr) && holidays[d].type === "important"
   );
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    
-    if (x < rect.width / 2) {
-      // Left side
-      triggerSound();
-      setDirection(-1);
-      setCurrentDate(subMonths(currentDate, 1));
-    } else {
-      // Right side
-      triggerSound();
-      setDirection(1);
-      setCurrentDate(addMonths(currentDate, 1));
-    }
-    
-    const timeout = setTimeout(() => {
-      setIsHolding(true); // activate drag mode after long press
-    }, 400);
+ const handlePageClick = (e: React.MouseEvent) => {
+  // Ignore clicks on interactive elements
+  const target = e.target as HTMLElement;
 
-    setHoldTimeout(timeout);
-  };
+  if (
+    target.closest('button') ||
+    target.closest('input') ||
+    target.closest('textarea') ||
+    target.closest('[data-no-swipe]')
+  ) {
+    return;
+  }
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+
+  if (x < rect.width / 2) {
+    triggerSound();
+    setDirection(-1);
+    setCurrentDate(subMonths(currentDate, 1));
+  } else {
+    triggerSound();
+    setDirection(1);
+    setCurrentDate(addMonths(currentDate, 1));
+  }
+};
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
@@ -343,8 +347,8 @@ const handleYearSelect = (year: number) => {
 
         style={{ transformOrigin: "top center", perspective: "2000px" }}
 
-        className="w-full max-w-md mx-auto flex flex-col items-center preserve-3d scale-95 touch-pan-y cursor-grab active:cursor-grabbing"
-        onMouseDown={handleMouseDown}
+        className="w-full max-w-md mx-auto flex flex-col items-center preserve-3d scale-95 touch-pan-y cursor-grab active:cursor-grabbing pointer-events-none md:pointer-events-auto"
+        onClick={handlePageClick}
         onMouseUp={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -386,7 +390,7 @@ const handleYearSelect = (year: number) => {
             </div>
 
             {/* Flipper Engine wraps the ENTIRE visual paper below the bindings */}
-            <div className="relative w-full preserve-3d" style={{ height: '680px' }}>
+            <div className="relative w-full preserve-3d pointer-events-auto" style={{ height: '680px' }}>
 
               <AnimatePresence mode="popLayout" custom={direction}>
 
@@ -401,7 +405,7 @@ const handleYearSelect = (year: number) => {
 
                   style={{ transformOrigin: "top center" }}
                 >
-                  <div className="relative z-20 flex flex-col h-full">
+                 <div className="relative z-20 flex flex-col h-full" data-no-swipe>
                     <HeroSection 
   currentDate={currentDate}
   setPickerType={setPickerType}
@@ -430,11 +434,23 @@ const handleYearSelect = (year: number) => {
         
         {/* Navigation */}
         <div className="flex justify-between mb-2">
-          <button onClick={() => setYearStart(yearStart - 12)}>⬅</button>
-          <span className="text-sm font-semibold">
-            {yearStart} - {yearStart + 11}
-          </span>
-          <button onClick={() => setYearStart(yearStart + 12)}>➡</button>
+          <button
+  onMouseDown={(e) => e.stopPropagation()}
+  onClick={() => setYearStart(yearStart - 12)}
+>
+  ⬅
+</button>
+
+<span className="text-sm font-semibold">
+  {yearStart} - {yearStart + 11}
+</span>
+
+<button
+  onMouseDown={(e) => e.stopPropagation()}
+  onClick={() => setYearStart(yearStart + 12)}
+>
+  ➡
+</button>
         </div>
 
         {/* Years */}
