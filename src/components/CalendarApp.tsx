@@ -264,6 +264,15 @@ useEffect(() => {
     setDirection(-1);
     setCurrentDate(subMonths(currentDate, 1));
   };
+  const dynamicShadow = useTransform(
+  smoothMouseX,
+  [0, 0.5, 1],
+  [
+    "0px 40px 80px rgba(0,0,0,0.25), -20px 0px 40px rgba(34,153,214,0.25)",
+    "0px 40px 80px rgba(0,0,0,0.25), 0px 0px 40px rgba(34,153,214,0.2)",
+    "0px 40px 80px rgba(0,0,0,0.25), 20px 0px 40px rgba(255,120,120,0.25)"
+  ]
+);
 
   const fullPageFlipVariants: any = {
     enter: (direction: number) => {
@@ -351,12 +360,17 @@ useEffect(() => {
   className="min-h-screen w-full px-3 sm:px-6 
 flex items-center justify-center"
   style={{
-    background: `
-      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.05), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.05), transparent 40%),
-      linear-gradient(135deg, #e8e8e8, #d6d6d6)
-    `
-  }}
+  background: `
+    linear-gradient(180deg, #f5f5f5, #e5e5e5),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.02) 0px,
+      rgba(0,0,0,0.02) 1px,
+      transparent 1px,
+      transparent 40px
+    )
+  `
+}}
 >
       {/* Outer entrance animation container WITH VERY SLOW PREMIUM physics */}
       <motion.div
@@ -402,12 +416,15 @@ scale-100 md:scale-95 h-full justify-start"
         >
           {/* Swinging Calendar Sheet Container Base Layer */}
           <motion.div
-                            style={{ transformOrigin: "top center", perspective: "2000px" }}
-                          className="relative w-full 
-                shadow-[0_40px_80px_rgba(0,0,0,0.25),0_10px_20px_rgba(0,0,0,0.15)] 
-                rounded-b-sm rounded-t-sm flex flex-col z-20 border border-slate-200 bg-white"
-
-          >
+  style={{ 
+    transformOrigin: "top center", 
+    perspective: "2000px",
+    boxShadow: dynamicShadow
+  }}
+  className="relative w-full 
+  rounded-b-sm rounded-t-sm flex flex-col z-20 
+  border border-slate-200 bg-white"
+>
 
             {/* Spiral binding rings statically mounted OVER the flipping paper sheets! */}
             <div className="absolute top-0 w-full h-6 -mt-2.5 flex justify-between px-10 md:px-16 z-50 pointer-events-none drop-shadow-md">
@@ -441,76 +458,65 @@ scale-100 md:scale-95 h-full justify-start"
   setPickerType={setPickerType}
 />
 {pickerType && (
-  <div
-  data-picker
-  data-no-swipe
-  onClick={(e) => e.stopPropagation()}
- className="absolute top-16 left-6 
-bg-white shadow-2xl rounded-2xl p-4 z-[999] border border-gray-200"
->
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center">
 
-    {/* MONTH PICKER */}
-    {pickerType === 'month' && (
-      <div className="grid grid-cols-3 gap-3">
-  {Array.from({ length: 12 }).map((_, i) => (
+    {/* BACKDROP */}
+    <div 
+      className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+      onClick={() => setPickerType(null)}
+    />
+
+    {/* MODAL */}
     <div
-      key={i}
-      onClick={() => handleMonthSelect(i)}
-      className="p-3 text-center text-sm font-medium cursor-pointer 
-      rounded-xl bg-gray-50 hover:bg-[#2299D6] hover:text-white 
-      transition-all duration-200 shadow-sm hover:scale-105"
+      className="relative bg-white rounded-2xl shadow-xl 
+      p-3 w-[75%] max-w-[260px] z-10"
+      onClick={(e) => e.stopPropagation()}
     >
-      {format(new Date(2026, i, 1), 'MMM')}
-    </div>
-  ))}
-</div>
-    )}
 
-    {/* YEAR PICKER */}
-    {pickerType === 'year' && (
-      <div className="w-64">
-
-  {/* Navigation */}
-  <div className="flex justify-between items-center mb-3">
-    <button
-      onClick={() => setYearStart(yearStart - 12)}
-      className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
-    >
-      ⬅
-    </button>
-
-    <span className="text-sm font-semibold">
-      {yearStart} - {yearStart + 11}
-    </span>
-
-    <button
-      onClick={() => setYearStart(yearStart + 12)}
-      className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
-    >
-      ➡
-    </button>
-  </div>
-
-  {/* Years */}
-  <div className="grid grid-cols-3 gap-3">
-    {Array.from({ length: 12 }).map((_, i) => {
-      const year = yearStart + i;
-      return (
-        <div
-          key={year}
-          onClick={() => handleYearSelect(year)}
-          className="p-3 text-center text-sm font-medium cursor-pointer 
-          rounded-xl bg-gray-50 hover:bg-[#2299D6] hover:text-white 
-          transition-all duration-200 shadow-sm hover:scale-105"
-        >
-          {year}
+      {/* MONTH PICKER */}
+      {pickerType === 'month' && (
+        <div className="max-h-56 overflow-y-auto flex flex-col">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              onClick={() => handleMonthSelect(i)}
+              className={`px-3 py-2 text-sm text-center cursor-pointer rounded-md transition
+              ${
+                currentDate.getMonth() === i
+                  ? "bg-[#2299D6] text-white"
+                  : "hover:bg-[#2299D6] hover:text-white"
+              }`}
+            >
+              {format(new Date(2026, i, 1), 'MMMM')}
+            </div>
+          ))}
         </div>
-      );
-    })}
-  </div>
-</div>
-    )}
+      )}
 
+      {/* YEAR PICKER */}
+      {pickerType === 'year' && (
+        <div className="max-h-56 overflow-y-auto flex flex-col">
+          {Array.from({ length: 50 }).map((_, i) => {
+            const year = new Date().getFullYear() - 25 + i;
+            return (
+              <div
+                key={year}
+                onClick={() => handleYearSelect(year)}
+                className={`px-3 py-2 text-sm text-center cursor-pointer rounded-md transition
+                ${
+                  currentDate.getFullYear() === year
+                    ? "bg-[#2299D6] text-white"
+                    : "hover:bg-[#2299D6] hover:text-white"
+                }`}
+              >
+                {year}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+    </div>
   </div>
 )}
 
@@ -547,7 +553,12 @@ bg-white shadow-2xl rounded-2xl p-4 z-[999] border border-gray-200"
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%]  bg-black/30 blur-2xl h-8 rounded-full pointer-events-none"></div>
+                 <motion.div
+  style={{ opacity: smoothMouseX }}
+  className="absolute -bottom-8 left-1/2 -translate-x-1/2 
+  w-[70%] h-10 rounded-full pointer-events-none
+  bg-gradient-to-r from-blue-400/30 via-purple-400/30 to-pink-400/30 blur-2xl"
+/>
                 </motion.div>
               </AnimatePresence>
             </div>
