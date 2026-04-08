@@ -27,59 +27,63 @@ export function CalendarApp() {
 
   const mouseX = useMotionValue(0.5);
   const smoothMouseX = useSpring(mouseX, { stiffness: 40, damping: 25 });
-  const mouseRotate = useTransform(smoothMouseX, [0, 1], [-2, 2]);
+  const mouseRotate = useTransform(smoothMouseX, [0, 1], [-0.5, 0.5]);
   const [isHolding, setIsHolding] = useState(false);
   const [holdTimeout, setHoldTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchEndX, setTouchEndX] = useState(0);
+  const [pickerType, setPickerType] = useState<'month' | 'year' | null>(null);
+const [yearStart, setYearStart] = useState(new Date().getFullYear() - 6);
 
   const holidays: Record<string, { name: string; type: string }> = {
     // JANUARY
     "2026-01-01": { name: "New Year", type: "important" },
     "2026-01-14": { name: "Makar Sankranti", type: "festival" },
     "2026-01-15": { name: "Pongal", type: "festival" },
-    "2026-01-26": { name: "Republic Day 🇮🇳", type: "important" },
+    "2026-01-26": { name: "Republic Day", type: "important" },
 
     // FEBRUARY
-    "2026-02-14": { name: "Valentine's Day ❤️", type: "festival" },
-    "2026-02-26": { name: "Maha Shivaratri 🕉️", type: "festival" },
+    "2026-02-14": { name: "Valentine's Day", type: "festival" },
+    "2026-02-26": { name: "Maha Shivaratri", type: "festival" },
 
     // MARCH
-    "2026-03-08": { name: "Holi 🎨", type: "festival" },
-    "2026-03-29": { name: "Ugadi 🌿", type: "festival" },
+    "2026-03-08": { name: "Holi", type: "festival" },
+    "2026-03-29": { name: "Ugadi", type: "festival" },
 
     // APRIL
-    "2026-04-06": { name: "Ram Navami 🚩", type: "festival" },
-    "2026-04-10": { name: "Good Friday ✝️", type: "important" },
+    "2026-04-06": { name: "Ram Navami", type: "festival" },
+    "2026-04-10": { name: "Good Friday", type: "important" },
     "2026-04-14": { name: "Ambedkar Jayanti", type: "important" },
 
     // MAY
     "2026-05-01": { name: "Labour Day", type: "important" },
 
     // JUNE
-    "2026-06-07": { name: "Bakrid (Eid al-Adha) 🐐", type: "festival" },
+    "2026-06-07": { name: "Bakrid (Eid al-Adha)", type: "festival" },
 
     // JULY
-    "2026-07-21": { name: "Guru Purnima 🙏", type: "festival" },
+    "2026-07-21": { name: "Guru Purnima", type: "festival" },
 
     // AUGUST
-    "2026-08-15": { name: "Independence Day 🇮🇳", type: "important" },
-    "2026-08-19": { name: "Raksha Bandhan 🎁", type: "festival" },
-    "2026-08-27": { name: "Krishna Janmashtami 🦚", type: "festival" },
+    "2026-08-15": { name: "Independence Day", type: "important" },
+    "2026-08-19": { name: "Raksha Bandhan", type: "festival" },
+    "2026-08-27": { name: "Krishna Janmashtami", type: "festival" },
 
     // SEPTEMBER
-    "2026-09-17": { name: "Ganesh Chaturthi 🐘", type: "festival" },
+    "2026-09-17": { name: "Ganesh Chaturthi", type: "festival" },
     "2026-09-07": { name: "Raaj Birthday", type: "important" },
 
     // OCTOBER
     "2026-10-02": { name: "Gandhi Jayanti", type: "important" },
-    "2026-10-20": { name: "Diwali 🎆", type: "festival" },
-    "2026-10-22": { name: "Govardhan Puja 🪔", type: "festival" },
+    "2026-10-20": { name: "Diwali", type: "festival" },
+    "2026-10-22": { name: "Govardhan Puja", type: "festival" },
 
     // NOVEMBER
     "2026-11-01": { name: "Kannada Rajyotsava", type: "festival" },
-    "2026-11-15": { name: "Guru Nanak Jayanti 🕊️", type: "festival" },
+    "2026-11-15": { name: "Guru Nanak Jayanti", type: "festival" },
 
     // DECEMBER
-    "2026-12-25": { name: "Christmas 🎄", type: "important" },
+    "2026-12-25": { name: "Christmas", type: "important" },
   };
   const [isHoveringDiwali, setIsHoveringDiwali] = useState(false);
   const currentMonthStr = format(currentDate, "yyyy-MM");
@@ -96,18 +100,74 @@ export function CalendarApp() {
     (d) => d.startsWith(currentMonthStr) && holidays[d].type === "important"
   );
 
-  const handleMouseDown = () => {
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    
+    if (x < rect.width / 2) {
+      // Left side
+      triggerSound();
+      setDirection(-1);
+      setCurrentDate(subMonths(currentDate, 1));
+    } else {
+      // Right side
+      triggerSound();
+      setDirection(1);
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+    
     const timeout = setTimeout(() => {
       setIsHolding(true); // activate drag mode after long press
-    }, 400); // 400ms = long press
+    }, 400);
 
     setHoldTimeout(timeout);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    setTouchEndX(touchEndX);
+    
+    const diff = touchStartX - touchEndX;
+    const minSwipeDistance = 50;
+    
+    if (Math.abs(diff) > minSwipeDistance) {
+      triggerSound();
+      if (diff > 0) {
+        // Left swipe (next)
+        setDirection(1);
+        setCurrentDate(addMonths(currentDate, 1));
+      } else {
+        // Right swipe (prev)
+        setDirection(-1);
+        setCurrentDate(subMonths(currentDate, 1));
+      }
+    }
   };
 
   const handleMouseUp = () => {
     if (holdTimeout) clearTimeout(holdTimeout);
     setIsHolding(false);
   };
+
+const handleMonthSelect = (month: number) => {
+  triggerSound();
+  const newDate = new Date(currentDate);
+  newDate.setMonth(month);
+  setCurrentDate(newDate);
+  setPickerType(null);
+};
+
+const handleYearSelect = (year: number) => {
+  triggerSound();
+  const newDate = new Date(currentDate);
+  newDate.setFullYear(year);
+  setCurrentDate(newDate);
+  setPickerType(null);
+};
 
 
   useEffect(() => {
@@ -255,7 +315,16 @@ export function CalendarApp() {
   if (!isLoaded) return null;
 
   return (
-    <div className="min-h-screen w-full px-4 sm:px-6 py-6 bg-slate-100 flex flex-col items-center justify-center md:justify-start font-sans selection:bg-[#2299D6]/30">
+   <div
+  className="min-h-screen w-full px-4 sm:px-6 py-6 flex flex-col items-center justify-center md:justify-start font-sans selection:bg-[#2299D6]/30"
+  style={{
+    background: `
+      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.05), transparent 40%),
+      linear-gradient(135deg, #e8e8e8, #d6d6d6)
+    `
+  }}
+>
       {/* Outer entrance animation container WITH VERY SLOW PREMIUM physics */}
       <motion.div
         initial={{ y: -8, rotate: -2 }}
@@ -268,13 +337,17 @@ export function CalendarApp() {
         }}
 
         transition={{
-          duration: hasDiwali ? 2 : 3,
-          repeat: hasDiwali || hasIndependence || hasImportant ? Infinity : 0
+          duration: 0.5,
+          repeat: 0
         }}
 
         style={{ transformOrigin: "top center", perspective: "2000px" }}
 
-        className="w-full max-w-md mx-auto flex flex-col items-center preserve-3d scale-95"
+        className="w-full max-w-md mx-auto flex flex-col items-center preserve-3d scale-95 touch-pan-y cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
 
 
@@ -295,8 +368,10 @@ export function CalendarApp() {
         >
           {/* Swinging Calendar Sheet Container Base Layer */}
           <motion.div
-            style={{ transformOrigin: "top center", perspective: "2000px" }}
-            className="relative w-full shadow-[0_20px_40px_rgba(0,0,0,0.15)] rounded-b-sm rounded-t-sm flex flex-col z-20 border border-slate-200 bg-white"
+                            style={{ transformOrigin: "top center", perspective: "2000px" }}
+                          className="relative w-full 
+                shadow-[0_40px_80px_rgba(0,0,0,0.25),0_10px_20px_rgba(0,0,0,0.15)] 
+                rounded-b-sm rounded-t-sm flex flex-col z-20 border border-slate-200 bg-white"
 
           >
 
@@ -314,21 +389,7 @@ export function CalendarApp() {
             <div className="relative w-full preserve-3d" style={{ height: '680px' }}>
 
               <AnimatePresence mode="popLayout" custom={direction}>
-                {isHoveringDiwali && (
-                  <motion.div
-                    className="absolute inset-0 z-[999] pointer-events-none"
-                    animate={{
-                      opacity: [0, 0.6, 0],
-                      scale: [1, 1.15, 1]
-                    }}
-                    transition={{
-                      duration: isHoveringDiwali ? 2 : 3,
-                      repeat: isHoveringDiwali || hasIndependence || hasImportant ? Infinity : 0
-                    }}
-                  >
-                    <div className="w-full h-full bg-[radial-gradient(circle,rgba(255,140,0,0.8)_0%,rgba(255,200,0,0.4)_40%,transparent_70%)]" />
-                  </motion.div>
-                )}
+
                 <motion.div
                   key={currentDate.toString()}
                   custom={direction}
@@ -341,7 +402,61 @@ export function CalendarApp() {
                   style={{ transformOrigin: "top center" }}
                 >
                   <div className="relative z-20 flex flex-col h-full">
-                    <HeroSection currentDate={currentDate} />
+                    <HeroSection 
+  currentDate={currentDate}
+  setPickerType={setPickerType}
+/>
+{pickerType && (
+  <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-white shadow-xl rounded-lg p-4 z-[999]">
+
+    {/* MONTH PICKER */}
+    {pickerType === 'month' && (
+      <div className="grid grid-cols-3 gap-2">
+        {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          onClick={() => handleMonthSelect(i)}
+          className="p-2 text-center text-sm cursor-pointer rounded hover:bg-[#2299D6] hover:text-white transition-all"
+        >
+            {format(new Date(2026, i, 1), 'MMM')}
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* YEAR PICKER */}
+    {pickerType === 'year' && (
+      <div className="w-56">
+        
+        {/* Navigation */}
+        <div className="flex justify-between mb-2">
+          <button onClick={() => setYearStart(yearStart - 12)}>⬅</button>
+          <span className="text-sm font-semibold">
+            {yearStart} - {yearStart + 11}
+          </span>
+          <button onClick={() => setYearStart(yearStart + 12)}>➡</button>
+        </div>
+
+        {/* Years */}
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 12 }).map((_, i) => {
+            const year = yearStart + i;
+            return (
+              <div
+                key={year}
+                onClick={() => handleYearSelect(year)}
+                className="p-2 text-center text-sm cursor-pointer rounded hover:bg-[#2299D6] hover:text-white transition-all"
+              >
+                {year}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
+  </div>
+)}
 
                     <div className="flex flex-row flex-1 p-2 md:p-4 bg-white gap-2">
                       {/* Notes section on the left */}
@@ -374,6 +489,7 @@ export function CalendarApp() {
                       </div>
                     </div>
                   </div>
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%]  bg-black/30 blur-2xl h-8 rounded-full pointer-events-none"></div>
                 </motion.div>
               </AnimatePresence>
             </div>

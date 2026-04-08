@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DayCell } from './DayCell';
 // Re-importing EventDataStore type simply from upper definition or recreating wrapper since it's just a Record
@@ -29,6 +29,9 @@ export function CalendarGrid({ currentDate, onPrevMonth, onNextMonth, selectedSt
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
   const onDayClick = (day: Date) => {
+    const today = startOfDay(new Date());
+    if (startOfDay(day) < today) return;
+    
     if (!selectedStart || (selectedStart && selectedEnd)) {
       setSelectedStart(day);
       setSelectedEnd(null);

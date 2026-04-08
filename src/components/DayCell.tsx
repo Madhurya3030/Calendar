@@ -30,7 +30,9 @@ export function DayCell({ day, monthStart, selectedStart, selectedEnd, hoverDate
   const hoverNorm = hoverDate ? startOfDay(hoverDate) : null;
 
   const isCurrentMonth = isSameMonth(dayNorm, monthStartNorm);
-  const isToday = isSameDay(dayNorm, startOfDay(new Date()));
+  const today = startOfDay(new Date());
+  const isToday = isSameDay(dayNorm, today);
+  const isPastDate = dayNorm < today;
 
   const isStart = startNorm && isSameDay(dayNorm, startNorm);
   const isEnd = endNorm && isSameDay(dayNorm, endNorm);
@@ -91,9 +93,14 @@ export function DayCell({ day, monthStart, selectedStart, selectedEnd, hoverDate
   }
 
   const todayClass = (isToday && !isStart && !isEnd && !inRange) ? "ring-1 ring-inset ring-[#2299D6] font-bold bg-white text-[#2299D6]" : "";
-  const hoverClass = (!inRange && !isStart && !isEnd) ? "hover:bg-slate-100" : "";
+  let hoverClass = (!inRange && !isStart && !isEnd) ? "hover:bg-slate-100" : "";
+  let pastClass = "";
+  if (isPastDate && isCurrentMonth) {
+    pastClass = "opacity-60 cursor-not-allowed";
+    hoverClass = "";
+  }
 
-  const finalClassName = `${wrapperClass} ${bgClass} ${roundClass} ${todayClass} ${hoverClass}`.trim();
+  const finalClassName = `${wrapperClass} ${pastClass} ${bgClass} ${roundClass} ${todayClass} ${hoverClass}`.trim();
 
   return (
     <motion.div
@@ -109,8 +116,8 @@ export function DayCell({ day, monthStart, selectedStart, selectedEnd, hoverDate
         duration: 2,
         repeat: Infinity
       }}
-      whileTap={{ scale: 0.95 }}
-      onClick={() => onDayClick(dayNorm)}
+      whileTap={isPastDate ? undefined : { scale: 0.95 }}
+      onClick={isPastDate ? undefined : () => onDayClick(dayNorm)}
       onMouseEnter={() => { onDayMouseEnter(dayNorm); setIsHovering(true); }}
       onMouseLeave={() => setIsHovering(false)}
       className={finalClassName}
