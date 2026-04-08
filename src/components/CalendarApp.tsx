@@ -100,27 +100,32 @@ const [yearStart, setYearStart] = useState(new Date().getFullYear() - 6);
     (d) => d.startsWith(currentMonthStr) && holidays[d].type === "important"
   );
 
- const handlePageClick = (e: React.MouseEvent) => {
-  // Ignore clicks on interactive elements
+const handlePageClick = (e: React.MouseEvent) => {
   const target = e.target as HTMLElement;
 
-  if (
-    target.closest('button') ||
-    target.closest('input') ||
-    target.closest('textarea') ||
-    target.closest('[data-no-swipe]')
-  ) {
-    return;
-  }
+  // Ignore real interactive elements only
+ if (
+  target.closest('button') ||
+  target.closest('input') ||
+  target.closest('textarea') ||
+  target.closest('[data-no-swipe]')
+)
+{ 
+  return;
+}
 
   const rect = e.currentTarget.getBoundingClientRect();
   const x = e.clientX - rect.left;
 
-  if (x < rect.width / 2) {
+  const edgeZone = 80; // px
+
+  if (x < edgeZone) {
+    // LEFT EDGE → previous
     triggerSound();
     setDirection(-1);
     setCurrentDate(subMonths(currentDate, 1));
-  } else {
+  } else if (x > rect.width - edgeZone) {
+    // RIGHT EDGE → next
     triggerSound();
     setDirection(1);
     setCurrentDate(addMonths(currentDate, 1));
@@ -320,7 +325,8 @@ const handleYearSelect = (year: number) => {
 
   return (
    <div
-  className="min-h-screen w-full px-4 sm:px-6 py-6 flex flex-col items-center justify-center md:justify-start font-sans selection:bg-[#2299D6]/30"
+  className="min-h-screen w-full px-3 sm:px-6 
+flex items-center justify-center"
   style={{
     background: `
       radial-gradient(circle at 20% 20%, rgba(0,0,0,0.05), transparent 40%),
@@ -347,8 +353,9 @@ const handleYearSelect = (year: number) => {
 
         style={{ transformOrigin: "top center", perspective: "2000px" }}
 
-        className="w-full max-w-md mx-auto flex flex-col items-center preserve-3d scale-95 touch-pan-y cursor-grab active:cursor-grabbing pointer-events-none md:pointer-events-auto"
-        onClick={handlePageClick}
+        className="w-full max-w-md mx-auto flex flex-col items-center 
+scale-100 md:scale-95 h-full justify-start"
+
         onMouseUp={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -405,13 +412,13 @@ const handleYearSelect = (year: number) => {
 
                   style={{ transformOrigin: "top center" }}
                 >
-                 <div className="relative z-20 flex flex-col h-full" data-no-swipe>
+                 <div className="relative z-20 flex flex-col h-full" >
                     <HeroSection 
   currentDate={currentDate}
   setPickerType={setPickerType}
 />
 {pickerType && (
-  <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-white shadow-xl rounded-lg p-4 z-[999]">
+  <div  data-no-swipe className="absolute top-20 left-1/2 -translate-x-1/2 bg-white shadow-xl rounded-lg p-4 z-[999]">
 
     {/* MONTH PICKER */}
     {pickerType === 'month' && (
@@ -474,7 +481,7 @@ const handleYearSelect = (year: number) => {
   </div>
 )}
 
-                    <div className="flex flex-row flex-1 p-2 md:p-4 bg-white gap-2">
+                   <div className="flex flex-row flex-1 p-2 md:p-4 bg-white gap-2"> 
                       {/* Notes section on the left */}
                       <div className="w-1/3 border-r border-slate-100 pr-2 md:pr-4">
                         <NotesSection
@@ -489,7 +496,8 @@ const handleYearSelect = (year: number) => {
                       </div>
 
                       {/* Calendar grid on the right */}
-                      <div className="w-2/3 pl-2 md:pl-4">
+                    <div className="w-2/3 pl-2 md:pl-4">
+  <div className="p-3 bg-white rounded-xl shadow-sm">
                         <CalendarGrid
                           currentDate={currentDate}
                           onPrevMonth={handlePrevMonth}
@@ -502,6 +510,7 @@ const handleYearSelect = (year: number) => {
                           holidays={holidays}
                           setIsHoveringDiwali={setIsHoveringDiwali}
                         />
+                        </div>
                       </div>
                     </div>
                   </div>
