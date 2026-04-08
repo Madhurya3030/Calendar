@@ -210,6 +210,29 @@ const handleYearSelect = (year: number) => {
 
   const flipAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
+useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+
+  // If picker is NOT open → do nothing
+  if (!pickerType) return;
+
+  // If click is inside picker OR trigger → ignore
+  if (
+    target.closest('[data-picker]') ||
+    target.closest('[data-trigger]')
+  ) {
+    return;
+  }
+
+  setPickerType(null);
+};
+
+  window.addEventListener('click', handleClickOutside);
+
+  return () => window.removeEventListener('click', handleClickOutside);
+}, []);
+
   useEffect(() => {
     // Preload a highly reliable page-turn MP3 natively to bypass click-latency network delays.
     // Using multiple known fallbacks if one fails to load
@@ -418,64 +441,74 @@ scale-100 md:scale-95 h-full justify-start"
   setPickerType={setPickerType}
 />
 {pickerType && (
-  <div  data-no-swipe className="absolute top-20 left-1/2 -translate-x-1/2 bg-white shadow-xl rounded-lg p-4 z-[999]">
+  <div
+  data-picker
+  data-no-swipe
+  onClick={(e) => e.stopPropagation()}
+ className="absolute top-16 left-6 
+bg-white shadow-2xl rounded-2xl p-4 z-[999] border border-gray-200"
+>
 
     {/* MONTH PICKER */}
     {pickerType === 'month' && (
-      <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: 12 }).map((_, i) => (
-        <div
-          key={i}
-          onClick={() => handleMonthSelect(i)}
-          className="p-2 text-center text-sm cursor-pointer rounded hover:bg-[#2299D6] hover:text-white transition-all"
-        >
-            {format(new Date(2026, i, 1), 'MMM')}
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-3 gap-3">
+  {Array.from({ length: 12 }).map((_, i) => (
+    <div
+      key={i}
+      onClick={() => handleMonthSelect(i)}
+      className="p-3 text-center text-sm font-medium cursor-pointer 
+      rounded-xl bg-gray-50 hover:bg-[#2299D6] hover:text-white 
+      transition-all duration-200 shadow-sm hover:scale-105"
+    >
+      {format(new Date(2026, i, 1), 'MMM')}
+    </div>
+  ))}
+</div>
     )}
 
     {/* YEAR PICKER */}
     {pickerType === 'year' && (
-      <div className="w-56">
-        
-        {/* Navigation */}
-        <div className="flex justify-between mb-2">
-          <button
-  onMouseDown={(e) => e.stopPropagation()}
-  onClick={() => setYearStart(yearStart - 12)}
->
-  ⬅
-</button>
+      <div className="w-64">
 
-<span className="text-sm font-semibold">
-  {yearStart} - {yearStart + 11}
-</span>
+  {/* Navigation */}
+  <div className="flex justify-between items-center mb-3">
+    <button
+      onClick={() => setYearStart(yearStart - 12)}
+      className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+    >
+      ⬅
+    </button>
 
-<button
-  onMouseDown={(e) => e.stopPropagation()}
-  onClick={() => setYearStart(yearStart + 12)}
->
-  ➡
-</button>
+    <span className="text-sm font-semibold">
+      {yearStart} - {yearStart + 11}
+    </span>
+
+    <button
+      onClick={() => setYearStart(yearStart + 12)}
+      className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+    >
+      ➡
+    </button>
+  </div>
+
+  {/* Years */}
+  <div className="grid grid-cols-3 gap-3">
+    {Array.from({ length: 12 }).map((_, i) => {
+      const year = yearStart + i;
+      return (
+        <div
+          key={year}
+          onClick={() => handleYearSelect(year)}
+          className="p-3 text-center text-sm font-medium cursor-pointer 
+          rounded-xl bg-gray-50 hover:bg-[#2299D6] hover:text-white 
+          transition-all duration-200 shadow-sm hover:scale-105"
+        >
+          {year}
         </div>
-
-        {/* Years */}
-        <div className="grid grid-cols-3 gap-2">
-          {Array.from({ length: 12 }).map((_, i) => {
-            const year = yearStart + i;
-            return (
-              <div
-                key={year}
-                onClick={() => handleYearSelect(year)}
-                className="p-2 text-center text-sm cursor-pointer rounded hover:bg-[#2299D6] hover:text-white transition-all"
-              >
-                {year}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      );
+    })}
+  </div>
+</div>
     )}
 
   </div>

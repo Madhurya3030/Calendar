@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 
 interface HeroSectionProps {
   currentDate: Date;
-  setPickerType: (type: 'month' | 'year') => void;
+  setPickerType: React.Dispatch<React.SetStateAction<'month' | 'year' | null>>;
 }
 
 const getMonthImage = (date: Date) => {
@@ -55,14 +55,18 @@ export function HeroSection({ currentDate, setPickerType }: HeroSectionProps) {
 
   <span 
     className="text-white text-sm md:text-lg font-medium cursor-pointer hover:opacity-80 transition-opacity"
-    onClick={() => setPickerType('year')}
+   onClick={() => 
+  setPickerType(prev => prev === 'year' ? null : 'year')
+}
   >
     {format(currentDate, 'yyyy')}
   </span>
 
   <span 
     className="text-white text-xl md:text-2xl font-bold tracking-widest uppercase cursor-pointer hover:opacity-80 transition-opacity"
-    onClick={() => setPickerType('month')}
+    onClick={() => 
+  setPickerType(prev => prev === 'month' ? null : 'month')
+}
   >
     {format(currentDate, 'MMMM')}
   </span>
