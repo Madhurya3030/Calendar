@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+#nextjs__container {
+    display: none !important;
+}
